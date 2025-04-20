@@ -1,0 +1,382 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disease Classification</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            background-color: #eee;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .tab.active {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .content {
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: bold;
+        }
+
+        input[type="file"],
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-family: monospace;
+        }
+
+        .input-help {
+            font-size: 0.9em;
+            color: #666;
+            margin: 5px 0 15px 0;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 3px solid #007bff;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            display: none;
+            background-color: #f8f9fa;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #007bff;
+        }
+
+        .result-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .probability-container {
+            margin-top: 15px;
+        }
+
+        .probability-item {
+            margin-bottom: 15px;
+        }
+
+        .probability-bar {
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+            height: 20px;
+            margin-top: 5px;
+        }
+
+        .probability-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .disease-name {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .probability-value {
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .probability-fill {
+            height: 100%;
+            background-color: #007bff;
+            transition: width 0.3s ease;
+        }
+
+        .error {
+            color: #dc3545;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 4px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            text-align: center;
+            display: none;
+            margin: 20px 0;
+            color: #666;
+        }
+
+        .loading:after {
+            content: '.';
+            animation: dots 1s steps(5, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60% { content: '...'; }
+            80%, 100% { content: ''; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Disease Classification System</h1>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('image')">Image Upload</div>
+            <div class="tab" onclick="switchTab('text')">Text Input</div>
+        </div>
+
+        <div class="content">
+            <div id="image-section" class="content-section active">
+                <div class="form-group">
+                    <label for="image-upload">Upload Medical Image</label>
+                    <input type="file" id="image-upload" accept="image/*">
+                    <button onclick="submitImage()">Analyze Image</button>
+                </div>
+            </div>
+
+            <div id="text-section" class="content-section">
+                <div class="form-group">
+                    <label for="text-input">Enter Numerical Values</label>
+                    <div class="input-help">
+                        Enter comma-separated numerical values (e.g., 2.13, 1.15, 2.85)
+                    </div>
+                    <input type="text" id="text-input" placeholder="Example: 2.13, 1.15, 2.85">
+                    <button onclick="submitText()">Analyze Values</button>
+                </div>
+            </div>
+
+            <div class="loading">Processing</div>
+            
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.content-section').forEach(c => c.classList.remove('active'));
+            
+            if (tab === 'image') {
+                document.querySelector('.tab:first-child').classList.add('active');
+                document.getElementById('image-section').classList.add('active');
+            } else {
+                document.querySelector('.tab:last-child').classList.add('active');
+                document.getElementById('text-section').classList.add('active');
+            }
+            
+            // Hide result when switching tabs
+            document.getElementById('result').style.display = 'none';
+        }
+
+        function showLoading() {
+            document.querySelector('.loading').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.querySelector('.loading').style.display = 'none';
+        }
+
+        function formatProbability(prob) {
+            // Remove the % symbol and convert to number
+            return parseFloat(prob.replace('%', '')) / 100;
+        }
+
+        function showResult(data) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+            
+            if (data.error) {
+                resultDiv.innerHTML = `<div class="error">${data.error}</div>`;
+            } else {
+                let html = '<div class="result-header">';
+                html += `<div class="result-title">${data.result}</div>`;
+                if (data.confidence) {
+                    html += `<div class="probability-value">Confidence: ${data.confidence}</div>`;
+                }
+                html += '</div>';
+
+                if (data.disease_type) {
+                    html += `<div><strong>Predicted Disease:</strong> ${data.disease_type}</div>`;
+                }
+
+                if (data.probabilities) {
+                    html += '<div class="probability-container">';
+                    html += '<h3>Disease Probabilities:</h3>';
+                    
+                    // Sort probabilities in descending order
+                    const sortedProbabilities = Object.entries(data.probabilities)
+                        .sort((a, b) => formatProbability(b[1]) - formatProbability(a[1]));
+
+                    sortedProbabilities.forEach(([disease, probability]) => {
+                        const probValue = formatProbability(probability);
+                        html += `
+                            <div class="probability-item">
+                                <div class="probability-label">
+                                    <span class="disease-name">${disease}</span>
+                                    <span class="probability-value">${probability}</span>
+                                </div>
+                                <div class="probability-bar">
+                                    <div class="probability-fill" style="width: ${probValue * 100}%"></div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+
+                resultDiv.innerHTML = html;
+            }
+            
+            resultDiv.style.display = 'block';
+        }
+
+        async function submitImage() {
+            const fileInput = document.getElementById('image-upload');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showResult({ error: 'Please select an image file.' });
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            showLoading();
+            
+            try {
+                const response = await fetch('/predict/image', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                hideLoading();
+                showResult(data);
+            } catch (error) {
+                hideLoading();
+                showResult({ error: 'An error occurred while processing the image.' });
+            }
+        }
+
+        async function submitText() {
+            const textInput = document.getElementById('text-input');
+            const text = textInput.value.trim();
+            
+            if (!text) {
+                showResult({ error: 'Please enter numerical values.' });
+                return;
+            }
+
+            showLoading();
+            
+            try {
+                const response = await fetch('/predict/text', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+                const data = await response.json();
+                hideLoading();
+                showResult(data);
+            } catch (error) {
+                hideLoading();
+                showResult({ error: 'An error occurred while processing the values.' });
+            }
+        }
+    </script>
+</body>
+</html>
